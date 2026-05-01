@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voter Dashboard | Online Voting System</title>
+    <style>
+        :root { 
+            --primary: #2c3e50; 
+            --accent: #3498db; 
+            --success: #27ae60; 
+            --danger: #e74c3c; 
+            --light: #f4f7f6;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--light); margin: 0; padding: 0; }
+        
+        /* Navigation */
+        .nav { background: var(--primary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .nav h1 { margin: 0; font-size: 1.2rem; }
+
+        /* Layout */
+        .container { display: grid; grid-template-columns: 300px 1fr; gap: 25px; max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+        
+        /* Sidebar/Profile Card */
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .profile-box { text-align: center; }
+        .avatar { width: 80px; height: 80px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 32px; margin: 0 auto 15px; font-weight: bold; }
+        .dept-badge { background: #e1f5fe; color: #01579b; padding: 5px 15px; border-radius: 20px; font-size: 13px; font-weight: bold; display: inline-block; margin-bottom: 15px; }
+        
+        /* Content Sections */
+        h3 { margin-top: 0; color: var(--primary); border-bottom: 2px solid var(--light); padding-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 10px; transition: 0.2s; }
+        .item-row:hover { border-color: var(--accent); background: #fafafa; }
+        
+        /* Buttons */
+        .btn { border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; width: 100%; }
+        .btn-vote { background: var(--success); color: white; width: auto; }
+        .btn-vote:disabled { background: #bdc3c7; cursor: not-allowed; }
+        .btn-logout { background: var(--danger); color: white; margin-top: 20px; }
+
+        /* Progress Bars */
+        .result-item { margin-bottom: 15px; }
+        .progress-container { background: #eee; height: 12px; border-radius: 6px; margin-top: 8px; overflow: hidden; }
+        .progress-fill { background: var(--accent); height: 100%; transition: width 0.8s ease-out; }
+
+        @media (max-width: 850px) {
+            .container { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="nav">
+    <h1>Organizational Online Voting System</h1>
+    <span id="nav-user">Welcome, User</span>
+</div>
+
+<div class="container">
+    <!-- Sidebar: Profile Info -->
+    <div class="sidebar">
+        <div class="card profile-box">
+            <div class="avatar" id="user-initial">?</div>
+            <h2 id="display-username" style="margin: 10px 0;">Username</h2>
+            <div class="dept-badge" id="display-dept">Department</div>
+            
+            <div style="text-align: left; margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee;">
+                <p><strong>Role:</strong> <span id="display-role" style="text-transform: capitalize;">-</span></p>
+                <p><strong>Status:</strong> <span id="display-status">Checking...</span></p>
+            </div>
+            
+            <button onclick="logout()" class="btn btn-logout">Logout</button>
+        </div>
+    </div>
+
+    <!-- Main Content: Ballot & Results -->
+    <div class="main-content">
+        <!-- Official Ballot -->
+        <div class="card">
+            <h3>🗳️ Official Ballot</h3>
+            <p style="font-size: 0.9rem; color: #666; margin-bottom: 20px;">Please select one candidate to cast your vote. This action cannot be undone.</p>
+            <div id="ballot-list">Loading candidates...</div>
+        </div>
+
+        <!-- Live Election Results -->
+        <div class="card">
+            <h3>📊 Election Results (Live)</h3>
+            <div id="results-list">Loading live results...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. Session Management
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) {
+        window.location.href = 'index.html';
+    }
+
+    // 2. Initialize Profile UI
+    document.getElementById('nav-user').innerText = `Welcome, ${user.username}`;
+    document.getElementById('display-username').innerText = user.username;
+    document.getElementById('display-dept').innerText = user.dept_name || 'General';
+    document.getElementById('display-role').innerText = user.role;
+    document.getElementById('user-initial').innerText = user.username[0].toUpperCase();
+    document.getElementById('display-status').innerHTML = user.has_voted ? "Vote Casted ✅" : "Not Voted ❌";
+
+    async function loadDashboard() {
+        try {
+            // --- Fetch Candidates for Ballot ---
+            // Note: Uses the new /candidates route we added
+            const candRes = await fetch('/candidates');
+            const candidates = await candRes.json();
+            const ballotDiv = document.getElementById('ballot-list');
+            
+            if (candidates.length === 0) {
+                ballotDiv.innerHTML = "<p>No candidates are currently available.</p>";
+            } else {
+                ballotDiv.innerHTML = candidates.map(c => `
+                    <div class="item-row">
+                        <div>
+                            <strong>${c.name}</strong> <span class="dept-badge" style="font-size:10px; margin:0;">${c.dept_name}</span><br>
+                            <small style="color: #666;">Position: ${c.position}</small>
+                        </div>
+                        <button class="btn btn-vote" onclick="castVote(${c.id})" ${user.has_voted ? 'disabled' : ''}>
+                            ${user.has_voted ? 'Voted' : 'Cast Vote'}
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            // --- Fetch Results ---
+            // Note: Uses the existing /admin/results endpoint with the role header
+            const resResponse = await fetch('/admin/results', {
+                headers: { 'user-role': user.role }
+            });
+            const results = await resResponse.json();
+            const resultsDiv = document.getElementById('results-list');
+            
+            const totalVotes = results.reduce((sum, r) => sum + (r.votes_count || 0), 0) || 1;
+
+            resultsDiv.innerHTML = results.map(r => {
+                const votes = r.votes_count || 0;
+                const percent = Math.round((votes / totalVotes) * 100);
+                
+                return `
+                    <div class="result-item">
+                        <div style="display:flex; justify-content:space-between; margin-bottom: 5px;">
+                            <span><strong>${r.name}</strong> <small>(${r.position})</small></span>
+                            <span><strong>${votes}</strong> votes (${percent}%)</span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-fill" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+        } catch (err) {
+            console.error("Dashboard Load Error:", err);
+            document.getElementById('ballot-list').innerHTML = "Unable to connect to the voting server.";
+        }
+    }
+
+    // 3. Voting Action
+    async function castVote(candidateId) {
+        if (!confirm("Are you sure you want to cast your vote? This cannot be changed.")) return;
+
+        try {
+            const response = await fetch('/vote', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: user.id, candidate_id: candidateId })
+            });
+
+            if (response.ok) {
+                alert("Success! Your vote has been recorded.");
+                // Update session state
+                user.has_voted = 1;
+                localStorage.setItem('user', JSON.stringify(user));
+                location.reload(); 
+            } else {
+                const err = await response.json();
+                alert("Error: " + err.error);
+            }
+        } catch (err) {
+            alert("Network error. Please try again.");
+        }
+    }
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = 'index.html';
+    }
+
+    // Initial Load
+    loadDashboard();
+</script>
+
+</body>
+</html>

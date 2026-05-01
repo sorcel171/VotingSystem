@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal | Election Management</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+    <h2>Admin Center</h2>
+    
+    <div class="admin-card">
+        <small>Authenticated User</small>
+        <div id="admin-name">Loading...</div>
+        <div id="admin-role" style="font-size: 0.8rem; color: #94a3b8; font-weight: normal;">Administrator</div>
+    </div>
+
+    <nav>
+        <a href="dashboard.html" class="nav-link">Voter Dashboard</a>
+        <a href="#" onclick="localStorage.clear(); location.href='index.html'" class="nav-link">Sign Out</a>
+    </nav>
+
+    <button class="btn-reset-sidebar" onclick="resetElection()">PURGE ELECTION DATA</button>
+</aside>
+
+<main class="main-content">
+    <header>
+        <h1>System Management</h1>
+        <p>Real-time monitoring and oversight of the voting process.</p>
+    </header>
+
+    <!-- NEW SECTION: ADD CANDIDATE FORM -->
+    <section class="card" style="margin-bottom: 25px;">
+        <h3>➕ Register New Candidate</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: end;">
+            <div>
+                <label style="display:block; font-size: 0.8rem; color: #64748b; margin-bottom: 5px;">Full Name</label>
+                <input type="text" id="new-cand-name" placeholder="Ex: Juan Dela Cruz" style="width:100%; padding:10px; border: 1px solid #e2e8f0; border-radius: 6px;">
+            </div>
+            <div>
+                <label style="display:block; font-size: 0.8rem; color: #64748b; margin-bottom: 5px;">Position</label>
+                <input type="text" id="new-cand-pos" placeholder="Ex: President" style="width:100%; padding:10px; border: 1px solid #e2e8f0; border-radius: 6px;">
+            </div>
+            <div>
+                <label style="display:block; font-size: 0.8rem; color: #64748b; margin-bottom: 5px;">Department</label>
+                <input type="text" id="new-cand-dept" placeholder="Ex: Engineering" style="width:100%; padding:10px; border: 1px solid #e2e8f0; border-radius: 6px;">
+            </div>
+            <button onclick="addCandidate()" class="btn-action-delete" style="background: #b4ced4; padding: 10px 20px; height: 42px;">Add Candidate</button>
+        </div>
+    </section>
+
+    <div class="dashboard-grid">
+        <!-- Results Section -->
+        <section class="card">
+            <h3>Election Standings</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Candidate Information</th>
+                        <th>Tally</th>
+                        <th style="text-align: right;">Oversight</th>
+                    </tr>
+                </thead>
+                <tbody id="candidate-list"></tbody>
+            </table>
+        </section>
+
+        <!-- Voter Participation Section -->
+        <section class="card">
+            <h3>Voter Participation</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Credential</th>
+                        <th>Activity Status</th>
+                    </tr>
+                </thead>
+                <tbody id="voter-list"></tbody>
+            </table>
+        </section>
+    </div>
+</main>
+
+<script>
+    const currentUser = JSON.parse(localStorage.getItem('user'));
+    if (!currentUser || currentUser.role !== 'admin') {
+        alert("Authorization required.");
+        window.location.href = 'index.html';
+    }
+    document.getElementById('admin-name').innerText = currentUser.username;
+
+    async function loadData() {
+        const headers = { 'user-role': 'admin' };
+        try {
+            const cRes = await fetch('/admin/results', { headers });
+            const candidates = await cRes.json();
+            document.getElementById('candidate-list').innerHTML = candidates.map(c => `
+                <tr>
+                    <td>
+                        <div class="candidate-info">${c.name}</div>
+                        <div class="candidate-pos">${c.position}</div>
+                    </td>
+                    <td><span class="vote-count">${c.votes_count}</span></td>
+                    <td style="text-align: right;">
+                        <button class="btn-action-delete" onclick="deleteCand(${c.id})">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            const vRes = await fetch('/admin/voters', { headers });
+            const voters = await vRes.json();
+            document.getElementById('voter-list').innerHTML = voters.map(v => {
+                const isVoted = v.status.includes('✅');
+                return `
+                    <tr>
+                        <td>
+                            <div style="font-weight: 500;">${v.username}</div>
+                            <div style="font-size: 0.75rem; color: #64748b;">${v.role}</div>
+                        </td>
+                        <td>
+                            <span class="status-pill ${isVoted ? 'status-voted' : 'status-pending'}">
+                                ${v.status}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (err) {
+            console.error("Error fetching administrative data:", err);
+        }
+    }
+
+    // --- NEW FUNCTION: ADD CANDIDATE ---
+    async function addCandidate() {
+        const name = document.getElementById('new-cand-name').value;
+        const position = document.getElementById('new-cand-pos').value;
+        const dept_name = document.getElementById('new-cand-dept').value;
+
+        if (!name || !position) return alert("Please fill in Name and Position");
+
+        const res = await fetch('/admin/add-candidate', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'user-role': 'admin' 
+            },
+            body: JSON.stringify({ name, position, dept_name })
+        });
+
+        if (res.ok) {
+            alert("Candidate added successfully!");
+            // Clear inputs
+            document.getElementById('new-cand-name').value = '';
+            document.getElementById('new-cand-pos').value = '';
+            document.getElementById('new-cand-dept').value = '';
+            loadData(); // Refresh the tables
+        } else {
+            const data = await res.json();
+            alert("Error: " + data.error);
+        }
+    }
+
+    async function deleteCand(id) {
+        if(confirm("Confirm: Permanently remove this candidate?")) {
+            await fetch(`/admin/delete-candidate/${id}`, { 
+                method: 'DELETE', 
+                headers: { 'user-role': 'admin' } 
+            });
+            loadData();
+        }
+    }
+
+    async function resetElection() {
+        if(confirm("CRITICAL WARNING: This will permanently wipe all tallies and voter records.")) {
+            await fetch('/admin/reset-election', { 
+                method: 'POST', 
+                headers: { 'user-role': 'admin' } 
+            });
+            loadData();
+        }
+    }
+
+    loadData();
+</script>
+</body>
+</html>

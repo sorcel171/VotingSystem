@@ -1,0 +1,185 @@
+:root {
+    --primary: #0f172a;       /* Dark slate for professional feel */
+    --accent: #3b82f6;        /* Modern blue */
+    --success: #10b981;       /* Clean emerald green */
+    --danger: #ef4444;        /* Soft red */
+    --bg-light: #f8fafc;     /* Subtle gray background */
+    --border: #e2e8f0;       /* Light border color */
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+}
+
+body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background-color: var(--bg-light);
+    color: var(--text-main);
+    margin: 0;
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar Styling */
+.sidebar {
+    width: 260px;
+    background: var(--primary);
+    color: white;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    height: 100vh;
+}
+
+.sidebar h2 {
+    font-size: 1.25rem;
+    margin-bottom: 30px;
+    letter-spacing: -0.025em;
+}
+
+.admin-card {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+}
+
+.nav-link {
+    color: #94a3b8;
+    text-decoration: none;
+    display: block;
+    padding: 10px 0;
+    transition: color 0.2s;
+}
+
+.nav-link:hover {
+    color: white;
+}
+
+/* Main Content Area */
+.main-content {
+    margin-left: 260px;
+    flex: 1;
+    padding: 40px;
+}
+
+header h1 {
+    font-size: 1.875rem;
+    margin: 0 0 8px 0;
+}
+
+header p {
+    color: var(--text-muted);
+    margin-bottom: 32px;
+}
+
+/* Form & Table Cards */
+.card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.card h3 {
+    margin-top: 0;
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Form Inputs */
+input[type="text"] {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input[type="text"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    text-align: left;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+td {
+    padding: 16px 12px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.candidate-info { font-weight: 600; }
+.candidate-pos { font-size: 0.85rem; color: var(--text-muted); }
+
+/* Buttons */
+.btn-action-delete {
+    background: white;
+    border: 1px solid #fee2e2;
+    color: var(--danger);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-action-delete:hover {
+    background: var(--danger);
+    color: white;
+}
+
+.btn-reset-sidebar {
+    margin-top: auto;
+    background: #450a0a;
+    color: #fecaca;
+    border: none;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* Status Pills */
+.status-pill {
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.status-voted { background: #dcfce7; color: #166534; }
+.status-pending { background: #fef3c7; color: #92400e; }
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 24px;
+}
