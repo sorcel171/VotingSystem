@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register | E-Vote System</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .reg-card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        h2 { color: #1a252f; margin-bottom: 20px; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
+        .btn-reg { width: 100%; padding: 12px; border: none; border-radius: 6px; background: #27ae60; color: white; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .error-msg { color: #e74c3c; margin-top: 10px; font-size: 14px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="reg-card">
+    <h2>Voter Registration</h2>
+    <form id="registerForm">
+        <input type="text" id="reg-username" placeholder="Choose Username" required>
+        <input type="password" id="reg-password" placeholder="Create Password" required>
+        <select id="reg-dept">
+            <option value="">Select Department</option>
+            <option value="1">Engineering</option>
+            <option value="2">Business</option>
+            <option value="3">Education</option>
+        </select>
+        <button type="submit" class="btn-reg">Create Account</button>
+    </form>
+    <div id="regError" class="error-msg"></div>
+    <div style="margin-top:20px; font-size:14px;">
+        Already have an account? <a href="index.html" style="color:#3498db; text-decoration:none;">Login here</a>
+    </div>
+</div>
+
+<script>
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('reg-username').value;
+        const password = document.getElementById('reg-password').value;
+        const department_id = document.getElementById('reg-dept').value;
+
+        try {
+            const response = await fetch('/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password, department_id })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert("Success! You can now log in.");
+                window.location.href = 'index.html';
+            } else {
+                const errorBox = document.getElementById('regError');
+                errorBox.textContent = data.error;
+                errorBox.style.display = 'block';
+            }
+        } catch (err) {
+            alert("Connection error.");
+        }
+    });
+</script>
+</body>
+</html>

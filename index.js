@@ -158,5 +158,29 @@ app.post('/admin/reset-election', isAdmin, (req, res) => {
     reset();
     res.json({ message: "Election reset" });
 });
-
+// Registration Route
+app.post('/register', async (req, res) => {
+    const { username, password, department_id } = req.body;
+    
+    try {
+        // 1. Hash the password for security
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        // 2. Insert into database (Role is strictly 'voter')
+        const stmt = db.prepare(`
+            INSERT INTO users (username, password, role, department_id, has_voted) 
+            VALUES (?, ?, 'voter', ?, 0)
+        `);
+        
+        stmt.run(username, hashedPassword, department_id || null);
+        
+        res.status(201).json({ message: "Account created successfully!" });
+    } catch (err) {
+        if (err.message.includes('UNIQUE')) {
+            res.status(400).json({ error: "Username already exists." });
+        } else {
+            res.status(500).json({ error: "Registration failed." });
+        }
+    }
+});
 app.listen(3000, () => console.log('Server running on http://localhost:3000'));
